@@ -424,6 +424,9 @@ button:active {
   justify-content: space-between;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   flex-shrink: 0;
+  /* Ensure image zoom doesn't spill outside the card */
+  overflow: hidden;
+  will-change: transform, box-shadow;
 }
 
 .category-card:hover {
@@ -436,6 +439,8 @@ button:active {
   height: 200px;
   object-fit: contain;
   margin-bottom: auto;
+  transition: transform 300ms ease;
+  will-change: transform;
 }
 
 .category-card h3 {
@@ -443,6 +448,20 @@ button:active {
   font-weight: 600;
   color: #333;
   margin: 10px 0 0 0;
+}
+
+/* Image zoom on hover/focus (match Best Sellers behavior) */
+.category-card:hover img,
+.category-card:focus-within img {
+  transform: scale(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-card,
+  .category-card img {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 /* Scrollbar styling - hidden by default, shows on scroll */
@@ -549,6 +568,7 @@ button:active {
   border: 1px solid #e0e0e0;
   padding: 15px;
   transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  cursor: pointer; /* make card feel clickable */
 }
 .best-sellers-section .product-card:hover,
 .best-sellers-section .product-card:focus-within {

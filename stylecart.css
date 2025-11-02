@@ -274,6 +274,11 @@ nav ul li a:hover {
   height: 80px;
   object-fit: cover;
   border-radius: 8px;
+  /* Smooth zoom for cart thumbnails */
+  transition: transform 300ms ease;
+  will-change: transform;
+  /* Clip the zoom so it doesn't spill outside the rounded corners */
+  clip-path: inset(0 round 8px);
 }
 
 .product-details h3 {
@@ -568,6 +573,7 @@ nav ul li a:hover {
   border: 1px solid #e0e0e0;;
   display: flex;
   flex-direction: column;
+  cursor: pointer; /* whole card is clickable */
 
 }
 
@@ -584,6 +590,27 @@ nav ul li a:hover {
   object-fit: contain; /* match products page look */
   border-radius: 8px;
   margin-bottom: 15px;
+  transition: transform 300ms ease;
+  will-change: transform;
+}
+
+/* Zoom effects */
+.product-info:hover .product-image,
+.cart-table tr:hover .product-image {
+  transform: scale(1.05);
+}
+
+.product-card:hover img,
+.product-card:focus-within img {
+  transform: scale(1.05);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-image,
+  .product-card img {
+    transition: none !important;
+    animation: none !important;
+  }
 }
 
 /* Title styling for new card structure */

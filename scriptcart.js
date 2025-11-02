@@ -456,6 +456,29 @@
     });
   });
 
+  // Make entire "You may also like" product card clickable (same as VIEW),
+  // but ignore clicks on interactive elements (buttons/links)
+  const isInteractive = (el) => !!el.closest('button, a, .btn, .product-actions');
+  document.querySelectorAll('.recently-viewed .product-card').forEach(card => {
+    if (card.dataset.cardClickWired === '1') return;
+    card.dataset.cardClickWired = '1';
+    card.addEventListener('click', (e) => {
+      if (isInteractive(e.target)) return; // let buttons do their job
+      e.preventDefault();
+      openProductModal(card);
+    });
+    // Keyboard accessibility: Enter/Space opens modal
+    if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '0');
+    if (!card.hasAttribute('role')) card.setAttribute('role', 'button');
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        if (isInteractive(document.activeElement || e.target)) return;
+        e.preventDefault();
+        openProductModal(card);
+      }
+    });
+  });
+
   // Backward-compat: support any legacy .add-to-cart-btn still present
   document.querySelectorAll('.recently-viewed .product-card .add-to-cart-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {

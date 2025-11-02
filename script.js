@@ -661,6 +661,27 @@ try {
         if (card) openProductModal(card);
       });
     });
+    // Make entire product card clickable (open VIEW/modal), ignoring clicks on interactive elements
+    const isInteractive = (el) => !!el.closest('button, a, .btn, .product-actions');
+    document.querySelectorAll('.best-sellers-section .product-card').forEach(card => {
+      if (card.dataset.cardClickWired === '1') return;
+      card.dataset.cardClickWired = '1';
+      card.addEventListener('click', (e) => {
+        if (isInteractive(e.target)) return; // let buttons/links handle their own clicks
+        e.preventDefault();
+        openProductModal(card);
+      });
+      // Keyboard accessibility: Enter/Space triggers modal
+      if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '0');
+      if (!card.hasAttribute('role')) card.setAttribute('role', 'button');
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (isInteractive(document.activeElement || e.target)) return;
+          e.preventDefault();
+          openProductModal(card);
+        }
+      });
+    });
   }
 
   function setupBestSellersResponsiveCarousel() {
