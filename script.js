@@ -413,7 +413,7 @@ try {
     style.id = 'toast-styles';
     style.textContent = `
       #toast-container{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2000;display:flex;flex-direction:column;gap:10px;pointer-events:none}
-      .toast-message{min-width:200px;max-width:90vw;padding:10px 14px;border-radius:8px;background:#222;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:14px;opacity:0;transform:translateY(10px);transition:opacity .2s ease,transform .2s ease;pointer-events:auto}
+      .toast-message{display:inline-flex;align-items:center;justify-content:center;max-width:90vw;padding:10px 14px;border-radius:8px;background:#222;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:14px;opacity:0;transform:translateY(10px);transition:opacity .2s ease,transform .2s ease;pointer-events:auto}
       .toast-message.show{opacity:1;transform:translateY(0)}
     `;
     document.head.appendChild(style);
@@ -625,7 +625,7 @@ try {
     const img = imgEl?.getAttribute('src') || '';
     const slug = slugify(title);
     addItemToCart({ slug, title, price, priceText, img, qty: 1 });
-    showToast(title);
+    showToast(`Added "${title}" to cart`);
   });
 
   // ===== Responsive Best Sellers Carousel (mobile: 1 card per slide cycling all items) =====
@@ -647,7 +647,7 @@ try {
         const img = (card.querySelector('img')?.getAttribute('src') || card.querySelector('.product-image')?.getAttribute('src') || '');
         const slug = slugify(title);
         addItemToCart({ slug, title, price, priceText, img, qty: 1 });
-        showToast(title);
+        showToast(`Added "${title}" to cart`);
       });
     });
     // Re-bind VIEW
