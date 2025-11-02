@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Overpass:wght@800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+@font-face {
+  font-family: 'HumanNature';
+  src: url('font/HumanNature.ttf') format('truetype');
+}
 
 * {
   margin: 0;
@@ -316,7 +320,6 @@ button:active {
   text-align: left;
 }
 
-
 .hero-left .paws-text {
   font-size: 100px;
   font-weight: 900;
@@ -324,6 +327,11 @@ button:active {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
   margin: 10px 0;
   line-height: 1;
+}
+
+.paws-font {
+  font-family: 'HumanNature', cursive;
+  color: white;
 }
 
 .hero-left .subtitle {
