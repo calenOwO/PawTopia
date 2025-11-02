@@ -405,13 +405,51 @@ try {
   });
 })();
 
+// ===== Global toast helper (ensure available on pages that don't load scriptproducts.js) =====
+(function ensureToast(){
+  if (typeof window.showToast === 'function') return;
+  if (!document.getElementById('toast-styles')) {
+    const style = document.createElement('style');
+    style.id = 'toast-styles';
+    style.textContent = `
+      #toast-container{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2000;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+      .toast-message{min-width:200px;max-width:90vw;padding:10px 14px;border-radius:8px;background:#222;color:#fff;box-shadow:0 6px 20px rgba(0,0,0,.25);font-size:14px;opacity:0;transform:translateY(10px);transition:opacity .2s ease,transform .2s ease;pointer-events:auto}
+      .toast-message.show{opacity:1;transform:translateY(0)}
+    `;
+    document.head.appendChild(style);
+  }
+  window.showToast = (message) => {
+    try {
+      let container = document.getElementById('toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.setAttribute('aria-live','polite');
+        container.setAttribute('aria-atomic','true');
+        document.body.appendChild(container);
+      }
+      const toast = document.createElement('div');
+      toast.className = 'toast-message';
+      toast.textContent = String(message);
+      container.appendChild(toast);
+      requestAnimationFrame(() => toast.classList.add('show'));
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 250);
+      }, 2200);
+    } catch(_) {
+      try { alert(String(message)); } catch(_e) {}
+    }
+  };
+})();
+
 // ================= Cart badge (item count in header) =================
 (function cartBadge() {
   const CART_KEY = 'pt-cart:v1';
   const link = document.querySelector('a[href="cart.html"]');
   if (!link) return;
 
-  // Inject styles
+  // Inject styles once
   if (!document.getElementById('cart-badge-styles')) {
     const style = document.createElement('style');
     style.id = 'cart-badge-styles';
@@ -424,7 +462,7 @@ try {
     document.head.appendChild(style);
   }
 
-  // Ensure wrapper for positioning
+  // Ensure wrapper for positioning and badge element exists
   link.classList.add('cart-link');
   let badge = link.querySelector('.cart-badge');
   if (!badge) {
@@ -436,163 +474,58 @@ try {
   function loadCart() {
     try { return JSON.parse(localStorage.getItem(CART_KEY) || '[]'); } catch (_) { return []; }
   }
-  let lastCount = -1;
-  function refresh() {
-    (function(){
-      const run = () => {
-        const selectors = [
-          '.hero-left h1', '.hero-left .subtitle', '.shop-btn',
-          '.category-card',
-          '.best-sellers-section .product-card',
-          '.articles-grid .article-card',
-          '.popular-brands .brand-box',
-          // Products page
-          '.product-list .product-card'
-        ];
-        const els = selectors.flatMap(sel => Array.from(document.querySelectorAll(sel)));
-        // Always apply the initial state so items can animate
-        els.forEach(el => { if (!el.classList.contains('is-revealed')) el.classList.add('reveal-up'); });
-
-        // Stagger the Home hero elements on page load for a nicer entrance
-        try {
-          const isHomePg = /index\.html(\?|#|$)/.test(window.location.pathname) || !!document.querySelector('.hero');
-          if (isHomePg) {
-            const heroOrder = [
-              ...document.querySelectorAll('.hero-left h1'),
-              ...document.querySelectorAll('.hero-left .subtitle'),
-              ...document.querySelectorAll('.hero-left .shop-btn')
-            ];
-            heroOrder.forEach((el, idx) => {
-              try { el.style.animationDelay = `${idx * 120}ms`; } catch(_) {}
-            });
-          }
-        } catch(_) {}
-
-        const hasIO = 'IntersectionObserver' in window;
-        if (!hasIO) {
-          // Fallback: reveal everything immediately to avoid hidden content
-          els.forEach(el => el.classList.add('is-revealed'));
-          return;
-        }
-
-        const io = new IntersectionObserver((entries) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add('is-revealed');
-              io.unobserve(entry.target);
-            }
-          });
-        }, { root: null, rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
-        els.forEach(el => io.observe(el));
-
-        // Group-based staggered reveal for Home sections
-        function setupGroupStagger(parentSelector, childSelector, baseDelay = 90, usePop = true) {
-          const parents = Array.from(document.querySelectorAll(parentSelector));
-          if (parents.length === 0) return;
-
-          const obs = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-              if (!entry.isIntersecting) return;
-              const parent = entry.target;
-              const children = Array.from(parent.querySelectorAll(childSelector));
-              children.forEach((el, idx) => {
-                if (!el.classList.contains('is-revealed')) {
-                  el.classList.add('reveal-up');
-                  try { el.style.animationDelay = `${idx * baseDelay}ms`; } catch(_) {}
-                  // Force reflow to ensure delayed animation applies if class toggled quickly
-                  void el.offsetWidth;
-                  el.classList.add('is-revealed');
-                  if (usePop) el.classList.add('pop-anim');
-                }
-              });
-              obs.unobserve(parent);
-            });
-          }, { threshold: 0.15, rootMargin: '0px 0px -10% 0px' });
-          parents.forEach(p => obs.observe(p));
-        }
-
-        // Only apply on Home page where these sections exist
-        const isHome = !!document.querySelector('.top-categories');
-        if (isHome) {
-          setupGroupStagger('.top-categories .categories-wrapper', '.category-card', 90, true);
-          setupGroupStagger('.best-sellers-section .carousel-inner', '.carousel-item.active .product-card', 100, true);
-          setupGroupStagger('.articles-grid .row', '.article-card', 100, true);
-          setupGroupStagger('.popular-brands', '.brand-box', 90, true);
-        }
-      };
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', run);
-      } else {
-        run();
-      }
-    })();
+  function getCount() {
+    const items = loadCart();
+    return items.reduce((sum, it) => sum + (Number(it.qty) || 0), 0);
   }
-
-  // Custom Toast function
-  function showToast(productName) {
-    // Create container if it doesn't exist
-    let container = document.getElementById('toast-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'toast-container';
-      document.body.appendChild(container);
+  let last = -1;
+  function updateBadge(pop = false) {
+    const count = getCount();
+    if (count <= 0) {
+      badge.style.display = 'none';
+      last = 0;
+      return;
     }
-
-    // Create toast element
-    const toast = document.createElement('div');
-    toast.className = 'toast-message';
-    toast.textContent = `Added "${productName}" to cart`;
-    container.appendChild(toast);
-
-    // Animate in
-    requestAnimationFrame(() => {
-      toast.classList.add('show');
-    });
-
-    // Auto-remove after 3 seconds
-    setTimeout(() => {
-      toast.classList.remove('show');
-      setTimeout(() => {
-        toast.remove();
-        // Remove container if empty
-        if (container.children.length === 0) {
-          container.remove();
-        }
-      }, 300);
-    }, 3000);
+    const text = count > 99 ? '99+' : String(count);
+    if (badge.textContent !== text) {
+      badge.textContent = text;
+      if (pop) {
+        badge.classList.remove('pop');
+        // Force reflow so animation can replay
+        void badge.offsetWidth;
+        badge.classList.add('pop');
+      }
+    }
+    badge.style.display = 'inline-block';
+    last = count;
   }
 
-  // Handle ADD TO CART button clicks in Best Sellers (supports old and new classes)
-  document.querySelectorAll('.best-sellers-section .btn-add-cart, .best-sellers-section .add-to-cart-btn').forEach(button => {
-    button.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const card = this.closest('.product-card');
-      if (!card) return;
-      
-      const title = (card.querySelector('.fw-semibold')?.textContent
-                  || card.querySelector('.product-name')?.textContent
-                  || '').trim();
-      const priceText = (card.querySelector('.price')?.textContent
-                      || card.querySelector('.product-price')?.textContent
-                      || '').trim();
-      const price = parsePrice(priceText);
-      const img = (card.querySelector('img')?.getAttribute('src')
-                || card.querySelector('.product-image')?.getAttribute('src')
-                || '');
-      const slug = slugify(title);
-      
-      // Add to cart
-      addItemToCart({ slug, title, price, priceText, img, qty: 1 });
-      
-      // Show toast notification
-      showToast(title);
-    });
-  });
+  // Initial paint
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => updateBadge(false));
+  } else {
+    updateBadge(false);
+  }
 
+  // React to updates from other scripts/pages
+  window.addEventListener('cartUpdated', () => updateBadge(true));
+  window.addEventListener('storage', (e) => { if (e.key === CART_KEY) updateBadge(true); });
+})();
+(function homeBestSellers(){
+  // Only run on Home page where Best Sellers exists
+  const homeRoot = document.querySelector('.best-sellers-section');
+  if (!homeRoot) return;
   // ===== Product Detail Modal (Home page) =====
+  // Minimal cart helpers for Home page (index.html)
+  const CART_KEY_HP = 'pt-cart:v1';
+  function loadCartHP(){ try { return JSON.parse(localStorage.getItem(CART_KEY_HP) || '[]'); } catch(_) { return []; } }
+  function saveCartHP(items){ try { localStorage.setItem(CART_KEY_HP, JSON.stringify(items)); } catch(_){}; try { window.dispatchEvent(new CustomEvent('cartUpdated')); } catch(_){} }
+  function parsePrice(text){ const n = parseFloat(String(text).replace(/[^0-9.\-]+/g,'')); return Number.isFinite(n)?n:0; }
+  function addItemToCart(item){ const cart = loadCartHP(); const i = cart.findIndex(x=>x.slug===item.slug); if(i>=0) cart[i].qty += item.qty||1; else cart.push({ ...item, qty: item.qty||1 }); saveCartHP(cart); }
+  function slugify(s){
+    return (s||'').toString().normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  }
   const modalEl = document.getElementById('productModal');
   const imgEl = document.getElementById('pmImg');
   const titleEl = document.getElementById('pmTitle');
@@ -790,8 +723,10 @@ try {
 
   // Initialize and keep in sync on resize
   setupBestSellersResponsiveCarousel();
+  // Ensure buttons are wired on first load (desktop or mobile)
+  rewireBestSellers();
   window.addEventListener('resize', debounce(setupBestSellersResponsiveCarousel, 200));
-});
+})();
 
 
 

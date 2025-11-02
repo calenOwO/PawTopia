@@ -273,9 +273,20 @@
   }
   function removeItem(slug) {
     let items = loadCart();
+    let removedTitle = '';
+    try {
+      const idx = items.findIndex(x => x.slug === slug);
+      if (idx >= 0) removedTitle = items[idx]?.title || '';
+    } catch(_) {}
     items = items.filter(x => x.slug !== slug);
     saveCart(items);
     render();
+    try {
+      if (typeof window.showToast === 'function') {
+        const name = removedTitle || 'Item';
+        window.showToast(`Removed "${name}" from cart`);
+      }
+    } catch(_) {}
   }
 
   // Expose coupon/checkout handlers referenced by HTML
