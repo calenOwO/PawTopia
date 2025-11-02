@@ -41,6 +41,13 @@ header {
   transition: all 0.3s ease;
 }
 
+/* Subtle shrink/shadow on scroll (shared behavior from script.js) */
+header.scrolled {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
 .logo a {
   display: block;
 }
@@ -90,6 +97,22 @@ nav ul li a:hover {
 
 .icons img:hover {
   opacity: 0.8;
+}
+
+/* Micro-interactions for buttons */
+.btn,
+.login-btn,
+.view-btn,
+.add-to-cart-btn,
+button {
+  transition: transform 0.12s ease, box-shadow 0.2s ease;
+}
+.btn:active,
+.login-btn:active,
+.view-btn:active,
+.add-to-cart-btn:active,
+button:active {
+  transform: scale(0.98);
 }
 
 /* Hamburger Menu */
@@ -322,14 +345,49 @@ nav ul li a:hover {
 
 .product-card {
   padding: 15px;
-  transition: all 0.2s ease-in-out;
   background: #fff;
-  border: 1px solid #e0e0e0;;
+  border: 1px solid #e0e0e0;
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
 }
 
-.product-card:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  transform: translateY(-3px);
+.product-card:hover,
+.product-card:focus-within {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-6px);
+  border-color: #FFAE34;
+}
+.product-card:hover,
+.product-card:focus-within { animation: productBounceUp 340ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.product-card { will-change: transform, box-shadow; }
+.product-card img { will-change: transform; }
+
+@keyframes productBounceUp {
+  0% { transform: translateY(0); }
+  55% { transform: translateY(-10px); }
+  80% { transform: translateY(-5px); }
+  100% { transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card,
+  .product-card img { transition: none !important; animation: none !important; }
+}
+
+/* ===== Reveal animations (utilities) ===== */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.reveal,
+.reveal-up {
+  opacity: 0;
+  transform: translateY(14px);
+  will-change: opacity, transform;
+}
+.is-revealed {
+  opacity: 1 !important;
+  transform: none !important;
+  animation: fadeUp 500ms ease-out both;
 }
 
 .product-card img {
@@ -337,6 +395,12 @@ nav ul li a:hover {
   height: 200px;
   object-fit: contain;
   margin-bottom: 10px;
+  transition: transform 300ms ease;
+}
+
+.product-card:hover img,
+.product-card:focus-within img {
+  transform: scale(1.05);
 }
 
 
